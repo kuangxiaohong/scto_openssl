@@ -1,0 +1,2 @@
+export OPENSSL_ENGINES="${PWD}/../engine"
+export LD_LIBRARY_PATH=${PWD}/../openssl-1.1.1d:LD_LIBRARY_PATH
