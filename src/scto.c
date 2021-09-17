@@ -119,6 +119,10 @@ static scto_digest_handles digest_handle[] = {
 	},
 };
 
+static RAND_METHOD scto_rand = {
+	.bytes = get_rand_data,
+};
+
 static int scto_destroy(ENGINE *e);
 static int scto_init(ENGINE *e);
 static int scto_finish(ENGINE *e);
@@ -678,7 +682,6 @@ static int scto_digest(ENGINE *e, const EVP_MD **digest,
     return r;
 }
 
-
 static int bind_scto(ENGINE *e)
 {
     /* Ensure the afalg error handling is set up */
@@ -723,6 +726,16 @@ static int bind_scto(ENGINE *e)
 		printf("scto_digest failed\n");
         return 0;
     }
+
+	if (!ENGINE_set_RAND(e,&scto_rand)) {
+		printf("scto_rand failed\n");
+	    return 0;
+    }
+
+	if(!ENGINE_set_default_RAND(e)){	
+		printf("scto_rand set default failed\n");
+		return 0;
+	}
 
     return 1;
 }

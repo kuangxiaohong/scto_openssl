@@ -21,9 +21,9 @@
 #define MAX_TEST_SIZE (1024*256*1024)	
 #define SM3_DIGEST_LEN (32)
 #define PRINT_CNT (1024)
-#define TEST_CNT (1000)
-#define SPEED_TEST_CNT (5000000000000)
-#define NUMBER_OF_THREADS 1
+#define TEST_CNT (1)
+#define SPEED_TEST_CNT (5)
+#define NUMBER_OF_THREADS 8
 #define CHECK 1
 #define DEBUG
 //#define SPEED 1
@@ -53,7 +53,7 @@ unsigned char encresult_ctr1[] = "\xC3\x8E\x17\x16\x4C\x3E\x58\xEA\x46\xD9\x3F\x
 unsigned char encresult_ofb1[] = "\xC3\x8E\x17\x16\x4C\x3E\x58\xEA\x46\xD9\x3F\xD8\x61\xE2\xC5\x22\x62\x6F\x90\x4C\xEF\x98\xFD\xDA\x7A\xF4\x0F\xA4\xB9\xEC\x73\x33\x4A\xBF\x67\x50\x12\xBC\x5E\xBC\xE2\xBD\xB9\x7B\x1C\x05\x12\x2A\xA2\x7D\xE1\x6B\xDE\x3A\x21\x41\xFB\x49\x7F\x2E\x9E\x83\x78\xE5";
 unsigned char *enc_result = &encresult_cbc1[0], *piv = NULL;
 
-static uint32_t block_sizes[] = { 16, 64, 256, 1024, 4096, 8192, 1024*16, 1024*64, 1024*128,256*1024,512*1024,1024*1024,2*1024*1024,4*1024*1024, 0 };
+static uint32_t block_sizes[] = { 16, 64, 256, 1024, 4096, 8192, 1024*16, 1024*64, 1024*128,256*1024,512*1024,1024*1024,2*1024*1024,4*1024*1024,16*1024*1024,64*1024*1024,128*1024*1024, 0 };
 
 static void dump_meminfo(char *msg,uint8_t *data, uint64_t len)
 {
@@ -108,6 +108,22 @@ int cp_read_random(unsigned char *buf, uint32_t buflen)
 	else
 		return -1;
 }
+
+void trng_test(uint8_t *buf,uint32_t len,int id)
+{
+	int ret_bytes = 0;
+	
+
+	ret_bytes = RAND_bytes(buf,len);
+	if (ret_bytes < len)
+		printf("hardware is busy,please try again! ret_bytes:%d id:%d\n",ret_bytes,id);
+
+		
+	if (!(len % 4096))
+		//dump_meminfo("trng",buf,len);
+	printf("ret_bytes ok:%d id:%d\n",ret_bytes,id);
+}
+
 
 void sm3_test(uint8_t *buf,uint32_t len,int id)
 {
@@ -468,6 +484,38 @@ void sm4_speed_test(uint8_t *input_buf, uint32_t input_len,uint8_t *output_buf,u
 	return;
 }
 
+
+void trng_speed_test(uint8_t *input_buf, uint32_t input_len,int id)
+{
+	uint32_t loop,j,ret;
+	struct timeval start,end;
+	uint32_t block_num = sizeof(block_sizes)/sizeof(uint32_t);
+	for (loop = 0; loop < block_num; loop++)
+	{
+		uint32_t size = block_sizes[loop];
+		if (size && size <= input_len)
+		{	
+			gettimeofday(&start,NULL);
+			for (j = 0; j < SPEED_TEST_CNT; j++)
+			{
+				ret = RAND_bytes(input_buf,size);
+				if (ret != size)
+				{
+			     		printf("ret size is:%d,j:%d\n",ret,j);	
+					continue;
+				}
+			}
+			gettimeofday(&end,NULL);
+			unsigned long interval = 1000ull*(end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec)/1000;
+			unsigned long speed = (1000ull*size * SPEED_TEST_CNT)/interval;
+			unsigned long operate = (1000ull*SPEED_TEST_CNT)/interval;
+			printf("trng_speed_test :hw engine  block_size:%d time:%ld(ms) speed:%ld(byte/s) Operate;%ld(operate/s) id:%d\n",size,interval,speed,operate,id);
+
+		}
+	}
+	return;
+}
+
 void* func_test(void *arg)
 {
 	int ret;
@@ -511,6 +559,7 @@ void* func_test(void *arg)
 #ifdef SPEED
 	sm3_speed_test(input_data_buf,input_data_len,*a);	
 	sm4_speed_test(input_data_buf,input_data_len,output_data_buf,output_data_len,check_data_buf,check_data_len,tmp_data_buf,tmp_data_len,*a);
+	trng_speed_test(input_data_buf,input_data_len,*a);
 #else
 	uint32_t loop = 64;
 	uint32_t test_cnt = TEST_CNT;
@@ -519,8 +568,9 @@ void* func_test(void *arg)
 		//for (loop = 64 ; loop < 65; loop++)
 		for (loop = 64 ; loop < input_data_len; loop++)
 		{
-			sm3_test(input_data_buf,loop,*a);
-			sm4_test(input_data_buf,loop,output_data_buf,output_data_len,check_data_buf,check_data_len,tmp_data_buf,tmp_data_len,*a);
+			trng_test(input_data_buf,loop,*a);
+			//sm3_test(input_data_buf,loop,*a);
+			//sm4_test(input_data_buf,loop,output_data_buf,output_data_len,check_data_buf,check_data_len,tmp_data_buf,tmp_data_len,*a);
 			if (!running)
 				return NULL;
 		}
