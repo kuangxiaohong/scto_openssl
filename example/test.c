@@ -22,11 +22,11 @@
 #define SM3_DIGEST_LEN (32)
 #define PRINT_CNT (1024)
 #define TEST_CNT (1)
-#define SPEED_TEST_CNT (5)
-#define NUMBER_OF_THREADS 8
+#define SPEED_TEST_CNT (5000)
+#define NUMBER_OF_THREADS 1
 #define CHECK 1
 #define DEBUG
-//#define SPEED 1
+#define SPEED 1
 //#define SOFT 1
 
 //#define GMSSL
@@ -53,7 +53,7 @@ unsigned char encresult_ctr1[] = "\xC3\x8E\x17\x16\x4C\x3E\x58\xEA\x46\xD9\x3F\x
 unsigned char encresult_ofb1[] = "\xC3\x8E\x17\x16\x4C\x3E\x58\xEA\x46\xD9\x3F\xD8\x61\xE2\xC5\x22\x62\x6F\x90\x4C\xEF\x98\xFD\xDA\x7A\xF4\x0F\xA4\xB9\xEC\x73\x33\x4A\xBF\x67\x50\x12\xBC\x5E\xBC\xE2\xBD\xB9\x7B\x1C\x05\x12\x2A\xA2\x7D\xE1\x6B\xDE\x3A\x21\x41\xFB\x49\x7F\x2E\x9E\x83\x78\xE5";
 unsigned char *enc_result = &encresult_cbc1[0], *piv = NULL;
 
-static uint32_t block_sizes[] = { 16, 64, 256, 1024, 4096, 8192, 1024*16, 1024*64, 1024*128,256*1024,512*1024,1024*1024,2*1024*1024,4*1024*1024,16*1024*1024,64*1024*1024,128*1024*1024, 0 };
+static uint32_t block_sizes[] = { 16, 64, 256, 1024, 4096, 8192, 1024*16, 1024*64, 1024*128,256*1024, 0 };
 
 static void dump_meminfo(char *msg,uint8_t *data, uint64_t len)
 {
@@ -569,8 +569,8 @@ void* func_test(void *arg)
 		for (loop = 64 ; loop < input_data_len; loop++)
 		{
 			trng_test(input_data_buf,loop,*a);
-			//sm3_test(input_data_buf,loop,*a);
-			//sm4_test(input_data_buf,loop,output_data_buf,output_data_len,check_data_buf,check_data_len,tmp_data_buf,tmp_data_len,*a);
+			sm3_test(input_data_buf,loop,*a);
+			sm4_test(input_data_buf,loop,output_data_buf,output_data_len,check_data_buf,check_data_len,tmp_data_buf,tmp_data_len,*a);
 			if (!running)
 				return NULL;
 		}
